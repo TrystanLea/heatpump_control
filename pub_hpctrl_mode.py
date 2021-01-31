@@ -16,10 +16,16 @@ mqtt_port = 1883
 mqtt_topic = "emon/#"
 
 def on_message(client, userdata, msg):
-    pass
+    if msg.topic=="hpctrl/config":
+        config = json.loads(msg.payload)
+        r.set('hpctrl:config',msg.payload)
+    if msg.topic=="emon/emonth5/temperature":
+        roomT = round(float(msg.payload),2)
+        r.set('hpmon5:roomT',roomT)
 
 def on_connect(client, userdata, flags, rc):
-    pass
+    mqttc.subscribe("hpctrl/config")
+    mqttc.subscribe("emon/emonth5/temperature") # Livingroom temperature
 
 mqttc = mqtt.Client()
 mqttc.on_message = on_message
