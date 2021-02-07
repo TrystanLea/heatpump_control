@@ -6,7 +6,7 @@ import datetime
 import math
 import logging
 
-logging.basicConfig(filename='/var/log/emoncms/hpctrl.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
+logging.basicConfig(filename='/home/pi/hpctrl.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
 
 frost_protection_temperature = 4.0
 
@@ -100,9 +100,11 @@ while 1:
 
         x = r.get('hpmon5:ambient')
         if x: hp['ambient'] = float(x.decode())
+        else: hp['ambient'] = 0.0                    # default frost protection on if no ambient temp
 
         x = r.get('hpmon5:roomT')
         if x: hp['roomT'] = float(x.decode())
+        else: hp['roomT'] = 10.0                     # default heating on if no room temp sensor
         
         last_hour = hour
         d = datetime.datetime.now()

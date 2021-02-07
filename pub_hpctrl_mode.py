@@ -4,8 +4,12 @@ import json
 import sys
 import redis
 import logging
+import traceback
 
-logging.basicConfig(filename='/var/log/emoncms/hpctrl_mqtt.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
+logging.basicConfig(handlers=[
+    logging.FileHandler("/home/pi/hpctrl_mqtt.log"),
+    logging.StreamHandler()
+], level=logging.DEBUG, format='%(asctime)s %(message)s')
 
 r = redis.Redis()
 
@@ -27,6 +31,7 @@ def on_message(client, userdata, msg):
     if msg.topic=="emon/emonth5/temperature":
         roomT = round(float(msg.payload),2)
         r.set('hpmon5:roomT',roomT)
+        r.expire('hpmon5:roomT',1800)
 
 def on_connect(client, userdata, flags, rc):
     global mqtt_connected
@@ -43,8 +48,11 @@ def on_disconnect(client, userdata, rc):
 mqttc = mqtt.Client()
 mqttc.on_message = on_message
 mqttc.on_connect = on_connect
+mqttc.on_disconnect = on_disconnect
 
 # -----------------------------------------------------
+
+count = 0
 
 while True:
 
@@ -56,7 +64,7 @@ while True:
                 mqttc.connect(mqtt_host, mqtt_port, 60)
                 mqttc.loop_start()
             except Exception as e:
-                logging.error(traceback.format_exc())
+                logging.error(e)
         
         if mqtt_connected==1:
             mode = r.get("hpctrl:mode")
@@ -67,14 +75,18 @@ while True:
                 if mode==1: mode_sh = 1
                 if mode==2: mode_dhw = 1
 
-                try:
+                try:                        
                     mqttc.publish("emon/hpmon5/mode",mode)
                     mqttc.publish("emon/hpmon5/mode_sh_elec",mode_sh)
                     mqttc.publish("emon/hpmon5/mode_dhw_elec",mode_dhw)
                     mqttc.publish("emon/hpmon5/mode_sh_heat",mode_sh)
                     mqttc.publish("emon/hpmon5/mode_dhw_heat",mode_dhw)
+
+                    if count%10==0: 
+                        logging.debug("Published "+str(count)+" messages")
+                    count += 1
                 except Exception as e:
-                    logging.error(traceback.format_exc())
+                    logging.error(e)
 
        
         time.sleep(2.0)
@@ -83,7 +95,7 @@ while True:
     try:
         mqttc.loop(0)
     except Exception as e:
-        logging.error(traceback.format_exc())
+        logging.error(e)
 
 # Close
 mqttc.loop_stop()
