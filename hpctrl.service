@@ -8,7 +8,7 @@ StartLimitIntervalSec=5
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python3 /home/pi/hpctrl.py
+ExecStart=/usr/bin/python3 /opt/emoncms/modules/hpctrl/hpctrl.py
 User=pi
 
 # Restart script if stopped
