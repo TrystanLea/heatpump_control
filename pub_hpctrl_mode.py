@@ -18,7 +18,7 @@ r = redis.Redis()
 # ------------------------------------------------------
 mqtt_user = "emonpi"
 mqtt_passwd = "emonpimqtt2016"
-mqtt_host = "192.168.1.64"
+mqtt_host = "192.168.1.102"
 mqtt_port = 1883
 mqtt_topic = "emon/#"
 

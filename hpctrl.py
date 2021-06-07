@@ -25,7 +25,7 @@ config = {
 # Read in input values
 # -----------------------------------------------------
 # roomT default to 0 ensures heating stays on if room sensor fails
-hp = {'roomT':0,'flowT':False,'returnT':False,'cyl_top':False,'cyl_bot':False,'flowrate':False,'ambient':False}
+hp = {'roomT':0,'flowT':False,'returnT':False,'cyl_top':False,'cyl_bot':False,'flowrate':False,'ambient':False,'extpipe':0}
 
 def log(message):
     # print(message)
@@ -62,7 +62,7 @@ hour = d.hour
 
 mode = "heating"
 heating = False
-dhw_set_point = 0
+dhw_active_index = False
 state = 0
 last_flowT_target = 0
 time_since_heating_start = 0
@@ -105,6 +105,10 @@ while 1:
         x = r.get('hpmon5:roomT')
         if x: hp['roomT'] = float(x.decode())
         else: hp['roomT'] = 10.0                     # default heating on if no room temp sensor
+
+        x = r.get('hpmon5:28-00000976299e')
+        if x: hp['extpipe'] = float(x.decode())
+        else: hp['extpipe'] = 0.0                      # default heating on if no room temp sensor
         
         last_hour = hour
         d = datetime.datetime.now()
@@ -124,14 +128,15 @@ while 1:
                 heating = period
         
         # Work out if we are at the start of a dhw run
-        for run in config['dhw']:
+        for i in range(len(config['dhw'])):
+            run = config['dhw'][i]
             if run['start']==hm and mode=="heating":
                 mode = "dhw"
-                dhw_set_point = run['T']
+                dhw_active_index = i
                 log("Starting DHW cycle")
         
         if inputs_ready():
-            log("room:%.1f flow:%.3f return:%.3f flowrate:%.3f cylt:%.2f cylb:%.2f ambient:%.2f" % (hp['roomT'],hp['flowT'],hp['returnT'],hp['flowrate'],hp['cyl_top'],hp['cyl_bot'],hp['ambient']))
+            log("room:%.1f flow:%.3f return:%.3f flowrate:%.3f cylt:%.2f cylb:%.2f ambient:%.2f extpipe:%.2f" % (hp['roomT'],hp['flowT'],hp['returnT'],hp['flowrate'],hp['cyl_top'],hp['cyl_bot'],hp['ambient'],hp['extpipe']))
             
             if first_run:
                 first_run = False
@@ -147,11 +152,11 @@ while 1:
             # -----------------------------------------------------
             if mode=="heating":
                 # Dont start heating for 10 minutes after finishing DHW
-                if time.time()-dhw_complete>600:
+                if time.time()-dhw_complete>60:
                     # ----------------------------------------------------------------
                     # Thermostat
                     # ----------------------------------------------------------------
-                    if hp['roomT']>=(heating['set_point']+0.195) and state!=0:
+                    if float(hp['roomT'])>=(float(heating['set_point'])+0.195) and state!=0:
                         # turn heat off for 60 seconds then turn heat pump off completely
                         state = 0
                         r.set("hpctrl:dac",temp_to_dac(20.0))
@@ -159,6 +164,7 @@ while 1:
                         log("Turning heating off");
                         time.sleep(60)
                         r.set("hpctrl:r1",0)
+                        r.set("hpctrl:ac1",0)
                         time.sleep(25)
                         #else: 
                         #log("Frost protection");
@@ -171,13 +177,14 @@ while 1:
                         log("Turning heating on");
                         state = 1
                         r.set("hpctrl:r1",1)
+                        r.set("hpctrl:ac1",0)
                         r.set("hpctrl:dac",temp_to_dac(20.0))
                         time_since_heating_start = time.time()
                         time.sleep(60)
 
                     # frost protection
                     if state==0:
-                        if hp['ambient']>frost_protection_temperature:
+                        if hp['extpipe']>frost_protection_temperature:
                             if frost_protection_state==1:
                                 log("Frost protection pump off")
                                 frost_protection_state=0
@@ -247,13 +254,28 @@ while 1:
                 # -----------------------------------------------------
                 r.set("hpctrl:mode",2)
                 
-                if hp['cyl_top']<dhw_set_point or hp['cyl_bot']<(dhw_set_point-3.0):
-                    flowT_target = hp['cyl_bot'] + 10.0
-                    log("DHW flow target: %.1f" % flowT_target)
-                    r.set("hpctrl:r1",1)
-                    r.set("hpctrl:ac1",1)
-                    r.set("hpctrl:dac",temp_to_dac(flowT_target))
-                    state = 1
+                run = config['dhw'][dhw_active_index]
+                
+                if hp['cyl_top']<run['T'] or hp['cyl_bot']<(run['T']-3.0):
+                
+                    if run['mode']=="min":
+                        flowT_target = hp['cyl_bot'] + 10.0
+                        log("DHW flow target: %.1f" % flowT_target)
+                        r.set("hpctrl:r1",1)
+                        r.set("hpctrl:ac1",1)
+                        r.set("hpctrl:dac",temp_to_dac(flowT_target))
+                        state = 1
+                        
+                    elif run['mode']=="max":
+                        flowT_target = run['T'] + 7.0
+                        if 'flowT' in run:
+                            flowT_target = run['flowT']
+                            
+                        log("DHW flow target: %.1f" % flowT_target)
+                        r.set("hpctrl:r1",1)
+                        r.set("hpctrl:ac1",1)
+                        r.set("hpctrl:dac",temp_to_dac(flowT_target))
+                        state = 1                    
                 else:
                     log("DHW heat up complete")
                     r.set("hpctrl:dac",temp_to_dac(20.0))                   # 1. Turn heat off

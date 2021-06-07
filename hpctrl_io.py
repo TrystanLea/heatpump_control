@@ -5,13 +5,12 @@ import redis
 
 r = redis.Redis()
 
-r1 = gpiozero.LED(9)
-r2 = gpiozero.LED(5)
-r3 = gpiozero.LED(26)
-r4 = gpiozero.LED(19)
-
-ac1 = gpiozero.LED(24)
-ac2 = gpiozero.LED(12)
+r1 = gpiozero.LED(24)
+r2 = gpiozero.LED(22)
+r3 = gpiozero.LED(23)
+r4 = gpiozero.LED(27)
+r5 = gpiozero.LED(18)
+r6 = gpiozero.LED(17)
 
 dac = Adafruit_MCP4725.MCP4725(address=0x60)
 
@@ -33,11 +32,11 @@ while True:
     if x:
         x = int(x.decode())
         if x==1:
-            ac1.on()
+            r4.on()
         else:
-            ac1.off()
+            r4.off()
     else:
-        ac1.off()
+        r4.off()
 
     # dac -----------------------------------      
     x = r.get("hpctrl:dac")
