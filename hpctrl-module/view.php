@@ -99,7 +99,7 @@ $.ajax({ url: path+"hpctrl/get-config", dataType: 'json', success: function(resu
                 app.save();
             },
             add_dhw: function() {
-                if (config["heating"].length>0) {       
+                if (config["dhw"].length>0) {       
                     var last = JSON.parse(JSON.stringify(config["dhw"][config["dhw"].length-1]))
                     config["dhw"].push(last);
                 } else {

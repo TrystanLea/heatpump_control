@@ -1,7 +1,7 @@
 {
     "name"         : "Heatpump Controller",
-    "version"      : "0.0.9",
+    "version"      : "0.0.10",
     "location"     : "/opt/emoncms/modules",
-    "branches_available": ["master"],
+    "branches_available": ["stable","master"],
     "requires": []
 }
