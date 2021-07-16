@@ -89,13 +89,13 @@ while 1:
         x = r.get('hpmon5:cyl_top')
         if x: hp['cyl_top'] = float(x.decode())
 
-        x = r.get('hpmon5:FlowT')
+        x = r.get('hpmon5:sontex_FlowT')
         if x: hp['flowT'] = float(x.decode())
         
-        x = r.get('hpmon5:ReturnT')
+        x = r.get('hpmon5:sontex_ReturnT')
         if x: hp['returnT'] = float(x.decode())
 
-        x = r.get('hpmon5:FlowRate')
+        x = r.get('hpmon5:sontex_FlowRate')
         if x: hp['flowrate'] = float(x.decode())
 
         x = r.get('hpmon5:ambient')
