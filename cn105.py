@@ -55,6 +55,10 @@ class CN105:
         # for i in range(0,length+1):
         #   print(str(i)+" "+hex(data[i])+" "+str(data[i]))
         
+        rtype = data[1]
+        if rtype==0x61:
+            return True
+        
         response = data[5:]
         cmd = response[0]
        
@@ -171,16 +175,17 @@ class CN105:
         self.ser.write(msg)
         data = self.read_reply()
 
-    def cn105_power(self,power):
+    def set_power(self,power):
         if power!=self.last_power:
             self.last_power = power
             print("Sending power cmd "+str(power))
             msg = [0xfc,0x41,0x02,0x7a,16,0x32,0x01,0x00,power,0x02,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00]
             msg = self.calc_checksum(msg)
             self.ser.write(msg)
-            self.read_reply()
+            data = self.read_reply()
+            return self.parse_frame(data)
 
-    def cn105_temp(self,temp):
+    def set_temp(self,temp):
         # reduce to 1 dp resolution
         temp = int(temp*10)*0.1
         # only update if state has changed
@@ -194,4 +199,5 @@ class CN105:
             msg = [0xfc,0x41,0x02,0x7a,16,0x32,0x80,0x00,0x00,0x02,0x00,0x00,0x00,0x00,0x00,z1sp_a,z1sp_b,0x00,0x00,0x00,0x00,0x00]
             msg = self.calc_checksum(msg)
             self.ser.write(msg)
-            self.read_reply()
+            data = self.read_reply()
+            return self.parse_frame(data)
