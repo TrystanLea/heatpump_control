@@ -15,10 +15,10 @@ frost_protection_temperature = 4.0
 # -----------------------------------------------------
 config = {
     "heating": [
-        {"h":0,"set_point":20.0,"flowT":30.0,"mode":"min"}
+        {"h":0,"set_point":5.0,"flowT":20.0,"mode":"min"}
     ],
     "dhw": [
-        # {"start":"1500","T":40.0}
+    
     ]
 }
 # -----------------------------------------------------
@@ -159,7 +159,7 @@ while 1:
                     if float(hp['roomT'])>=(float(heating['set_point'])+0.195) and state!=0:
                         # turn heat off for 60 seconds then turn heat pump off completely
                         state = 0
-                        r.set("hpctrl:dac",temp_to_dac(20.0))
+                        r.set("hpctrl:temp",20.0)
                         #if hp['ambient']>4.0:
                         log("Turning heating off");
                         time.sleep(60)
@@ -178,7 +178,7 @@ while 1:
                         state = 1
                         r.set("hpctrl:r1",1)
                         r.set("hpctrl:ac1",0)
-                        r.set("hpctrl:dac",temp_to_dac(20.0))
+                        r.set("hpctrl:temp",20.0)
                         time_since_heating_start = time.time()
                         time.sleep(60)
 
@@ -198,7 +198,7 @@ while 1:
                                     frost_protection_state=1
                                     log("Frost protection pump on")
                                     r.set("hpctrl:r1",1)
-                                    r.set("hpctrl:dac",temp_to_dac(14.0))
+                                    r.set("hpctrl:temp",14.0)
                             if frost_protection_state==1:
                                 # if on for 10 minutes
                                 if (time.time()-frost_protection_timer)>600:
@@ -206,7 +206,7 @@ while 1:
                                     frost_protection_state=0
                                     log("Frost protection pump off")
                                     r.set("hpctrl:r1",0)
-                                    r.set("hpctrl:dac",temp_to_dac(14.0))
+                                    r.set("hpctrl:temp",14.0)
                     # ----------------------------------------------------------------
                     # Heating flow temperature control
                     # ----------------------------------------------------------------         
@@ -243,7 +243,7 @@ while 1:
                             flowT_target = heating['flowT']
                             
                         log("SH flow target: %.1f" % flowT_target)
-                        r.set("hpctrl:dac",temp_to_dac(flowT_target))
+                        r.set("hpctrl:temp",flowT_target)
                         r.set("hpctrl:mode",1)
                     else:
                         r.set("hpctrl:mode",0)
@@ -263,7 +263,7 @@ while 1:
                         log("DHW flow target: %.1f" % flowT_target)
                         r.set("hpctrl:r1",1)
                         r.set("hpctrl:ac1",1)
-                        r.set("hpctrl:dac",temp_to_dac(flowT_target))
+                        r.set("hpctrl:temp",flowT_target)
                         state = 1
                         
                     elif run['mode']=="max":
@@ -274,11 +274,11 @@ while 1:
                         log("DHW flow target: %.1f" % flowT_target)
                         r.set("hpctrl:r1",1)
                         r.set("hpctrl:ac1",1)
-                        r.set("hpctrl:dac",temp_to_dac(flowT_target))
+                        r.set("hpctrl:temp",flowT_target)
                         state = 1                    
                 else:
                     log("DHW heat up complete")
-                    r.set("hpctrl:dac",temp_to_dac(20.0))                   # 1. Turn heat off
+                    r.set("hpctrl:temp",20.0)                               # 1. Turn heat off
                     r.set("hpctrl:ac1",0)                                   # 2. Turn pump off
                     time.sleep(25)
                     r.set("hpctrl:r1",0)                                    # 3. Turn DHW relay off
