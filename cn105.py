@@ -57,6 +57,7 @@ class CN105:
         
         rtype = data[1]
         if rtype==0x61:
+            print("ack")
             return True
         
         response = data[5:]
