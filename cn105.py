@@ -26,7 +26,7 @@ class CN105:
             while self.ser.in_waiting:
                 # Read in byte
                 val = ord(self.ser.read(1))
-                
+
                 if len(data)<=bid:
                     data.append(val)
                 else:
@@ -164,7 +164,12 @@ class CN105:
         data = self.read_reply()
         if data:
             self.print_hex_str(data)
-        
+
+    def connect(self):
+        msg = [0xfc,0x5a,0x02,0x7a,0x02,0xca,0x01,0x00]
+        msg = self.calc_checksum(msg)
+        self.ser.write(msg)
+        data = self.read_reply()
 
     def cn105_power(self,power):
         if power!=self.last_power:
