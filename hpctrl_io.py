@@ -2,6 +2,7 @@ import gpiozero
 import time
 import redis
 import serial
+import json
 from cn105 import CN105
 
 r = redis.Redis()
@@ -41,5 +42,27 @@ while True:
         ecodan.set_temp(float(x))
     else:
         ecodan.set_temp(float(0))
+
+    # Read data from ecodan
+    if (time.time()-lastupdate)>=10.0:
+        lastupdate = time.time()
+        
+        all_results = {"time":int(lastupdate)}
+        
+        result = ecodan.get_flow_return_dhw()
+        for key in result: all_results[key] = result[key]
+        
+        result = ecodan.get_compressor_frequency()
+        for key in result: all_results[key] = result[key]
+
+        result = ecodan.get_zone_and_outside()
+        for key in result: all_results[key] = result[key]
+
+        result = ecodan.get_modes()
+        for key in result: all_results[key] = result[key]
+        
+        # print(all_results)
+        
+        r.rpush("ecodan",json.dumps(all_results))
 
     time.sleep(1)

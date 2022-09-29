@@ -90,6 +90,20 @@ while True:
 
        
         time.sleep(2.0)
+        
+    if mqtt_connected==1:
+        result = r.lpop("ecodan")
+        if result:
+            try:  
+                ecodan_data = json.loads(result)
+            except Exception as e:
+                logging.error(e)
+                
+            for key in ecodan_data:
+                try:  
+                    mqttc.publish("emon/ecodan/"+key,ecodan_data[key])
+                except Exception as e:
+                    logging.error(e)
     time.sleep(0.1)
     
     try:
