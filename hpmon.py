@@ -4,6 +4,8 @@ import serial
 import json
 from cn105 import CN105
 
+r = redis.Redis()
+
 ecodan = CN105("/dev/ecodan", 2400)
 ecodan.connect()
 
