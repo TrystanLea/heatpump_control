@@ -47,7 +47,7 @@ while True:
     if (time.time()-lastupdate)>=10.0:
         lastupdate = time.time()
         
-        all_results = {"time":int(lastupdate)}
+        all_results = {"time":int(lastupdate),"node":"ecodan"}
         
         result = ecodan.get_flow_return_dhw()
         for key in result: all_results[key] = result[key]
@@ -63,6 +63,6 @@ while True:
         
         # print(all_results)
         
-        r.rpush("ecodan",json.dumps(all_results))
+        r.rpush("emonhub:sub",json.dumps(all_results))
 
     time.sleep(1)
