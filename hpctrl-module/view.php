@@ -1,4 +1,8 @@
-<?php global $path; $v=3; ?>
+<?php 
+defined('EMONCMS_EXEC') or die('Restricted access');
+global $path; 
+$v=3; 
+?>
 <script src="<?php echo $path; ?>Lib/vue.min.js"></script>
 <link href="<?php echo $path; ?>Modules/hpctrl/style.css?v=<?php echo $v; ?>" rel="stylesheet">
     
@@ -24,9 +28,14 @@
   font-size:48px;
 }
 
+[v-cloak] {
+  display: none;
+}
+
+
 </style>
     
-<div id="app" style="max-width:500px">
+<div id="app" style="max-width:500px" v-cloak>
 
 
   <div class="saved hide">Saved</div>
@@ -50,7 +59,7 @@
   </table>
   
   <div style="float:right">{{ time }}</div>
-   
+  
   <h3>Space Heating</h3>
   <table class="table">
     <tr><th>Hour</th><th>Set point</th><th>FlowT</th><th>Mode</th><th><button class="btn" @click="add_space"><i class="icon-plus"></i></button></th></tr>
@@ -66,7 +75,7 @@
     </tr>
   </table>
 
-  
+  <?php if (isset($dhw_enable) && $dhw_enable) { ?>
   <h3>DHW</h3>
   <table class="table">
     <tr><th>Start</th><th>Target</th><th>FlowT</th><th></th><th><button class="btn" @click="add_dhw"><i class="icon-plus"></i></button></th></tr>
@@ -81,6 +90,7 @@
       <td><button class="btn" @click="delete_dhw(index)"><i class="icon-trash"></i></button></td> 
     </tr>
   </table>
+  <?php } ?>
 </div>
 
 
@@ -88,6 +98,7 @@
 var config = {};
 var app = {};
 var save_inst = false;
+var feeds = {};
 
 $.ajax({ url: path+"hpctrl/get-config", dataType: 'json', success: function(result){
 
@@ -189,28 +200,40 @@ $.ajax({ url: path+"hpctrl/get-config", dataType: 'json', success: function(resu
             }
         }
     });
-    update_log();
+    update();
 }});
 
-function update_log(){
-    /*$.ajax({
-        url: path+"hpctrl/log",
-        dataType: 'text', async: true,
-        success: function(data) {
-            $("#log").html(data+"\n\n");
-        }
-    });*/
+function update(){
     
     $.ajax({
-        url: path+"feed/fetch.json?ids=165195,165118,165140,165228,165234",
+        url: path+"feed/list.json",
         dataType: 'json', async: true,
         success: function(data) {
-            app.room_temperature = data[0]
-            app.flow_temperature = data[1]
-            app.outside_temperature = data[2]
-            app.heatpump_elec = data[3]
-            app.heatpump_heat = data[4]
-            app.heatpump_cop = data[4]/data[3]
+            feeds = data;
+            
+            feeds_by_name = {}
+            for (var z in feeds) {
+                feeds_by_name[feeds[z].name] = feeds[z]
+            }
+            
+            if (feeds_by_name['livingroom_temperature']!=undefined) {
+                app.room_temperature = feeds_by_name['livingroom_temperature'].value;
+            }
+            if (feeds_by_name['heatpump_flowT']!=undefined) {
+                app.flow_temperature = feeds_by_name['heatpump_flowT'].value;
+            }
+            if (feeds_by_name['heatpump_ambient']!=undefined) {
+                app.outside_temperature = feeds_by_name['heatpump_ambient'].value;
+            }
+            if (feeds_by_name['heatpump_elec']!=undefined) {
+                app.heatpump_elec = feeds_by_name['heatpump_elec'].value;
+            }
+            if (feeds_by_name['heatpump_heat']!=undefined) {
+                app.heatpump_heat = feeds_by_name['heatpump_heat'].value;
+            }
+            if (feeds_by_name['heatpump_elec']!=undefined && feeds_by_name['heatpump_heat']!=undefined) {
+                app.heatpump_cop = app.heatpump_heat / app.heatpump_elec
+            }
         }
     });
     
@@ -223,13 +246,11 @@ function update_log(){
     for (var z in app.config.heating) {
         if (h>app.config.heating[z].h) {
             app.current_set_point = app.config.heating[z].set_point
-            
             app.active_period = z
-            
         }
     }
     
 }
-setInterval(update_log,10000);
+setInterval(update,10000);
 
 </script>
