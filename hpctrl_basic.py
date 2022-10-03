@@ -17,7 +17,7 @@ ecodan.connect()
 # -----------------------------------------------------
 config = {
     "heating": [
-        {"h":0,"set_point":5.0,"flowT":20.0,"mode":"min"}
+        {"start":"0000","set_point":5.0,"flowT":20.0,"mode":"min"}
     ]
 }
 
@@ -98,7 +98,7 @@ while 1:
         
         # Work out current heating setpoint
         for period in config['heating']:
-            if period['h']<=d.hour:
+            if int(hm)>=int(period['start']):
                 heating = period
     
         log("room:%.1f flow:%.3f return:%.3f outside:%.2f power:%d freq:%d" % (hp['roomT'],hp['flowT'],hp['returnT'],hp['outside'],hp['power'],hp['freq']))

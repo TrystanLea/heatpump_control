@@ -15,7 +15,7 @@ frost_protection_temperature = 4.0
 # -----------------------------------------------------
 config = {
     "heating": [
-        {"h":0,"set_point":5.0,"flowT":20.0,"mode":"min"}
+        {"start":"0000","set_point":5.0,"flowT":20.0,"mode":"min"}
     ],
     "dhw": [
     
@@ -124,7 +124,7 @@ while 1:
         
         # Work out current heating setpoint
         for period in config['heating']:
-            if period['h']<=d.hour:
+            if int(hm)>=int(period['start']):
                 heating = period
         
         # Work out if we are at the start of a dhw run

@@ -62,9 +62,9 @@ $v=3;
   
   <h3>Space Heating</h3>
   <table class="table">
-    <tr><th>Hour</th><th>Set point</th><th>FlowT</th><th>Mode</th><th><button class="btn" @click="add_space"><i class="icon-plus"></i></button></th></tr>
+    <tr><th>Time</th><th>Set point</th><th>FlowT</th><th>Mode</th><th><button class="btn" @click="add_space"><i class="icon-plus"></i></button></th></tr>
     <tr v-for="(item,index) in config.heating" v-bind:class="{ warning: index==active_period }">
-      <td><input type="text" v-model.number="item.h" @change="save"/></td>
+      <td><input type="text" v-model="item.start" @change="save"/></td>
       <td><input type="text" v-model.number="item.set_point" @change="save"/></td>
       <td><input type="text" v-model.number="item.flowT" @change="save"/></td>
       <td><select v-model="item.mode" @change="save">
@@ -105,7 +105,7 @@ $.ajax({ url: path+"hpctrl/get-config", dataType: 'json', success: function(resu
     if (!result || result==null) {
         config = {
             "heating": [
-                {"h":0,"set_point":5,"flowT":20.0,"mode":"min"}
+                {"start":"0000","set_point":5,"flowT":20.0,"mode":"min"}
             ],
             "dhw": [
                 {"start":"0200","T":42.0,"flowT":'auto', "mode":"min"},
@@ -114,6 +114,9 @@ $.ajax({ url: path+"hpctrl/get-config", dataType: 'json', success: function(resu
         }
     } else {
         config = result
+        
+        if (config.heating==undefined) config.heating = [];
+        if (config.heating.length==0) config.heating[0] = {"start":"0000","set_point":5,"flowT":20.0,"mode":"min"};
     }
     
     app = new Vue({
@@ -155,6 +158,7 @@ $.ajax({ url: path+"hpctrl/get-config", dataType: 'json', success: function(resu
                         alert("Could not save")
                     }
                 }});
+                update_active();
             },
             add_space: function() {
                 if (config["heating"].length>0) {
@@ -236,21 +240,25 @@ function update(){
             }
         }
     });
-    
+    update_active();
+}
+
+function update_active() {
     var d = new Date();
     h = d.getHours();
     m = d.getMinutes();
     app.time = String(h).padStart(2,'0')+":"+String(m).padStart(2,'0')
+    var hm = String(h).padStart(2,'0')+String(m).padStart(2,'0')
     
     var h = h+(m/60)
     for (var z in app.config.heating) {
-        if (h>app.config.heating[z].h) {
+        if (parseInt(hm)>=parseInt(app.config.heating[z].start)) {
             app.current_set_point = app.config.heating[z].set_point
             app.active_period = z
         }
     }
-    
 }
+
 setInterval(update,10000);
 
 </script>
