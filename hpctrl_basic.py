@@ -6,6 +6,7 @@ import datetime
 import math
 import logging
 import requests
+from os.path import exists
 
 from cn105 import CN105
 
@@ -24,6 +25,15 @@ config = {
         {"start":"0000","set_point":5.0,"flowT":20.0,"mode":"min"}
     ]
 }
+
+if exists("/home/pi/schedule.json"):
+    f = open("/home/pi/schedule.json", "r")
+    config_tmp = json.load(f)
+    if 'heating' in config_tmp:
+        config = config_tmp
+        log("config loaded from file")
+        print(config)
+    f.close()
 
 def log(message):
     #print(message)
@@ -90,7 +100,12 @@ while 1:
             log(reply.text)
             config_tmp = json.loads(reply.text)
             if 'heating' in config_tmp:
-                config = config_tmp
+                if json.dumps(config)!=json.dumps(config_tmp):
+                    config = config_tmp           
+                    log("Config updated")
+                    f = open("/home/pi/schedule.json", "w")
+                    f.write(json.dumps(config_tmp))
+                    f.close()
 
         x = r.hget('input:lastvalue:30','value')
         if x: hp['roomT'] = float(x.decode())*10.0
