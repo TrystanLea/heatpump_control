@@ -17,15 +17,21 @@ ecodan.connect()
 
 apikey = ""
 
-# -----------------------------------------------------
-# Test configuration
-# -----------------------------------------------------
+
+def log(message):
+    #print(message)
+    logging.debug(message)
+    
+log("--- hpctrl starting ---")
+
+# Default configuration = heat pump off
 config = {
     "heating": [
         {"start":"0000","set_point":5.0,"flowT":20.0,"mode":"min"}
     ]
 }
 
+# Load configuration from local schedule.json file if available
 if exists("/home/pi/schedule.json"):
     f = open("/home/pi/schedule.json", "r")
     config_tmp = json.load(f)
@@ -34,15 +40,10 @@ if exists("/home/pi/schedule.json"):
         log("config loaded from file")
         print(config)
     f.close()
-
-def log(message):
-    #print(message)
-    logging.debug(message)
     
 # -----------------------------------------------------
 # Init
 # -----------------------------------------------------    
-log("--- hpctrl starting ---")
 
 r = redis.Redis()
 
