@@ -2,15 +2,59 @@
 <script src="<?php echo $path; ?>Lib/vue.min.js"></script>
 <link href="<?php echo $path; ?>Modules/hpctrl/style.css?v=<?php echo $v; ?>" rel="stylesheet">
     
+<style>
+#live td {
+  text-align:center;
+  width:25%;
+}
+
+.set_point {
+  font-size:48px;
+  padding:20px;
+  display:inline-block
+}
+
+.room_temperature {
+  margin-top:5px;
+  margin-bottom:20px;
+}
+.set_point_ctrl {
+  display:inline-block;
+  padding:10px;
+  font-size:48px;
+}
+
+</style>
+    
 <div id="app" style="max-width:500px">
 
-  <h2>Heatpump Control</h2>
-  <div class="saved hide">Saved</div>
 
+  <div class="saved hide">Saved</div>
+  
+  <div style="text-align:center">
+    <h2>Heatpump Control</h2>
+    <p>SET POINT</p>
+    <div class="set_point_ctrl"><button @click="dec_set_point">-</button></div>
+    <div class="set_point">{{ config.heating[active_period].set_point }}</div>
+    <div class="set_point_ctrl"><button @click="inc_set_point">+</button></div>
+    <div class="room_temperature">Temperature: {{ room_temperature | toFixed(1) }}&#8451;</div>
+  </div>
+  
+  <table id="live" class="table">
+    <tr>
+      <td><b>Flow</b><br>{{ flow_temperature | toFixed(1) }}&#8451;</td>
+      <td><b>Outside</b><br>{{ outside_temperature | toFixed(1) }}&#8451;</td>
+      <td><b>Elec</b><br>{{ heatpump_elec | toFixed(0) }}W</td>
+      <td><b>Heat</b><br>{{ heatpump_heat | toFixed(0) }}W</td>
+    </tr>
+  </table>
+  
+  <div style="float:right">{{ time }}</div>
+   
   <h3>Space Heating</h3>
   <table class="table">
     <tr><th>Hour</th><th>Set point</th><th>FlowT</th><th>Mode</th><th><button class="btn" @click="add_space"><i class="icon-plus"></i></button></th></tr>
-    <tr v-for="(item,index) in config.heating">
+    <tr v-for="(item,index) in config.heating" v-bind:class="{ warning: index==active_period }">
       <td><input type="text" v-model.number="item.h" @change="save"/></td>
       <td><input type="text" v-model.number="item.set_point" @change="save"/></td>
       <td><input type="text" v-model.number="item.flowT" @change="save"/></td>
@@ -39,40 +83,54 @@
   </table>
 </div>
 
-<h3>Log</h3>
-<pre style="max-width:1000px"><div id="log"></div></pre>
-
 
 <script>
 var config = {};
+var app = {};
+var save_inst = false;
 
 $.ajax({ url: path+"hpctrl/get-config", dataType: 'json', success: function(result){
 
     if (!result || result==null) {
         config = {
             "heating": [
-                {"h":0,"set_point":18.5,"flowT":31.0,"mode":"min"},
-                {"h":6,"set_point":20.0,"flowT":34.0,"mode":"min"},
-                {"h":15,"set_point":21.0,"flowT":36.0,"mode":"max"},
-                {"h":16,"set_point":20.4,"flowT":31.0,"mode":"min"},
-                {"h":17,"set_point":20.2,"flowT":31.0,"mode":"min"},
-                {"h":18,"set_point":20.0,"flowT":31.0,"mode":"min"},
-                {"h":19,"set_point":21.0,"flowT":34.0,"mode":"min"},
-                {"h":21,"set_point":20.0,"flowT":31.0,"mode":"min"}
+                {"h":0,"set_point":5,"flowT":20.0,"mode":"min"}
             ],
             "dhw": [
-                {"start":"0700","T":40.0,"flowT":'auto', "mode":"min"},
-                {"start":"1400","T":40.0,"flowT":'auto', "mode":"min"}
+                {"start":"0200","T":42.0,"flowT":'auto', "mode":"min"},
+                {"start":"1400","T":42.0,"flowT":'auto', "mode":"min"}
             ]
         }
     } else {
         config = result
     }
     
-    var app = new Vue({
+    app = new Vue({
         el: '#app',
         data: {
-            config:config
+            config:config,
+            
+            time: '',
+            current_set_point: 18.0,
+            
+            active_period: 0,
+            
+            room_temperature:'',
+            flow_temperature:'',
+            outside_temperature:'',
+            heatpump_elec:'',
+            heatpump_heat:'',
+            heatpump_cop:0
+        },
+        filters: {
+           toFixed: function(val,dp) {
+               if (!isNaN(val)) {
+                   val = val * 1;
+                   return val.toFixed(1)
+               } else {
+                   return val
+               }
+           }
         },
         methods: {
             save: function() {
@@ -114,22 +172,64 @@ $.ajax({ url: path+"hpctrl/get-config", dataType: 'json', success: function(resu
             delete_dhw: function(index) {
                 config["dhw"].splice(index,1);
                 app.save();
+            },
+            inc_set_point: function() {
+                app.config.heating[app.active_period].set_point += 0.1;
+                app.config.heating[app.active_period].set_point = app.config.heating[app.active_period].set_point.toFixed(1)
+                app.config.heating[app.active_period].set_point *= 1;
+                clearTimeout(save_inst);
+                save_inst = setTimeout(function() {app.save()},2000); 
+            },
+            dec_set_point: function() {
+                app.config.heating[app.active_period].set_point -= 0.1;        
+                app.config.heating[app.active_period].set_point = app.config.heating[app.active_period].set_point.toFixed(1)
+                app.config.heating[app.active_period].set_point *= 1;
+                clearTimeout(save_inst);
+                save_inst = setTimeout(function() {app.save()},2000); 
             }
         }
     });
+    update_log();
 }});
 
 function update_log(){
-    $.ajax({
+    /*$.ajax({
         url: path+"hpctrl/log",
         dataType: 'text', async: true,
         success: function(data) {
             $("#log").html(data+"\n\n");
         }
+    });*/
+    
+    $.ajax({
+        url: path+"feed/fetch.json?ids=165195,165118,165140,165228,165234",
+        dataType: 'json', async: true,
+        success: function(data) {
+            app.room_temperature = data[0]
+            app.flow_temperature = data[1]
+            app.outside_temperature = data[2]
+            app.heatpump_elec = data[3]
+            app.heatpump_heat = data[4]
+            app.heatpump_cop = data[4]/data[3]
+        }
     });
+    
+    var d = new Date();
+    h = d.getHours();
+    m = d.getMinutes();
+    app.time = String(h).padStart(2,'0')+":"+String(m).padStart(2,'0')
+    
+    var h = h+(m/60)
+    for (var z in app.config.heating) {
+        if (h>app.config.heating[z].h) {
+            app.current_set_point = app.config.heating[z].set_point
+            
+            app.active_period = z
+            
+        }
+    }
+    
 }
-
-update_log();
-setInterval(update_log,5000);
+setInterval(update_log,10000);
 
 </script>
