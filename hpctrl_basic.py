@@ -5,6 +5,8 @@ import redis
 import datetime
 import math
 import logging
+import requests
+
 from cn105 import CN105
 
 logging.basicConfig(filename='/home/pi/hpctrl.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
@@ -77,8 +79,16 @@ while 1:
         #     log("config updated")
         #     r.delete('hpctrl:config')
         
-        f = open('/opt/emoncms/modules/hpctrl/schedule.json')
-        config = json.load(f)
+        if math.floor(time.time()%30)==0:
+            try:
+                reply = requests.get("https://emoncms.org/hpctrl/get-config?apikey=APIKEY", timeout=60)
+                reply.raise_for_status()
+            except requests.exceptions.RequestException as ex:
+                log(ex)
+            
+            config_tmp = json.loads(reply.text)
+            if 'heating' in config_tmp:
+                config = config_tmp
 
         x = r.hget('input:lastvalue:30','value')
         if x: hp['roomT'] = float(x.decode())*10.0
