@@ -1,14 +1,14 @@
-# sudo ln -s /home/pi/pub_hpctrl_mode.service /lib/systemd/system
+# sudo ln -s /opt/emoncms/modules/hpctrl/SCRIPT_NAME.service /lib/systemd/system
 # sudo systemctl daemon-reload
-# sudo systemctl enable pub_hpctrl_mode.service
+# sudo systemctl enable SCRIPT_NAME.service
 
 [Unit]
-Description=Read from pub_hpctrl_mode
+Description=SCRIPT_NAME service
 StartLimitIntervalSec=5
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python3 /opt/emoncms/modules/hpctrl/pub_hpctrl_mode.py
+ExecStart=/usr/bin/python3 /opt/emoncms/modules/hpctrl/SCRIPT_NAME.py
 User=pi
 
 # Restart script if stopped
@@ -18,8 +18,8 @@ RestartSec=30s
 
 # Tag things in the log
 # If you want to use the journal instead of the file above, uncomment SyslogIdentifier below
-# View with: sudo journalctl -f -u pub_hpctrl_mode -o cat
-SyslogIdentifier=pub_hpctrl_mode
+# View with: sudo journalctl -f -u SCRIPT_NAME -o cat
+SyslogIdentifier=SCRIPT_NAME
 
 [Install]
 WantedBy=multi-user.target
