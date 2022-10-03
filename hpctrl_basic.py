@@ -9,10 +9,12 @@ import requests
 
 from cn105 import CN105
 
-logging.basicConfig(filename='/home/pi/hpctrl.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
+logging.basicConfig(filename='/var/log/emoncms/hpctrl.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
 
 ecodan = CN105("/dev/ecodan", 2400)
 ecodan.connect()
+
+apikey = ""
 
 # -----------------------------------------------------
 # Test configuration
@@ -79,13 +81,13 @@ while 1:
         #     log("config updated")
         #     r.delete('hpctrl:config')
         
-        if math.floor(time.time()%30)==0:
+        if math.floor(time.time()%60)==0:
             try:
-                reply = requests.get("https://emoncms.org/hpctrl/get-config?apikey=APIKEY", timeout=60)
+                reply = requests.get("https://emoncms.org/hpctrl/get-config?apikey="+apikey, timeout=60)
                 reply.raise_for_status()
             except requests.exceptions.RequestException as ex:
                 log(ex)
-            
+            log(reply.text)
             config_tmp = json.loads(reply.text)
             if 'heating' in config_tmp:
                 config = config_tmp
