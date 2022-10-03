@@ -5,8 +5,12 @@ import redis
 import datetime
 import math
 import logging
+from cn105 import CN105
 
 logging.basicConfig(filename='/home/pi/hpctrl.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
+
+ecodan = CN105("/dev/ecodan", 2400)
+ecodan.connect()
 
 # -----------------------------------------------------
 # Test configuration
@@ -18,7 +22,7 @@ config = {
 }
 
 def log(message):
-    # print(message)
+    #print(message)
     logging.debug(message)
     
 # -----------------------------------------------------
@@ -73,7 +77,7 @@ while 1:
         #     log("config updated")
         #     r.delete('hpctrl:config')
         
-        f = open('schedule.json')
+        f = open('/opt/emoncms/modules/hpctrl/schedule.json')
         config = json.load(f)
 
         x = r.hget('input:lastvalue:30','value')
@@ -97,7 +101,7 @@ while 1:
             if period['h']<=d.hour:
                 heating = period
     
-        log("room:%.1f flow:%.3f return:%.3f outside:%.2f power:%d" % (hp['roomT'],hp['flowT'],hp['returnT'],hp['outside'],hp['power']))
+        log("room:%.1f flow:%.3f return:%.3f outside:%.2f power:%d freq:%d" % (hp['roomT'],hp['flowT'],hp['returnT'],hp['outside'],hp['power'],hp['freq']))
         
         if first_run:
             first_run = False
@@ -169,15 +173,15 @@ while 1:
 
                         
                         if flowT_target>heating['flowT']: flowT_target = heating['flowT']
+                        log("SH flow target: %.1f" % flowT_target)
+                        ecodan.set_temp(flowT_target)
                 else:
                     flowT_target = heating['flowT']
-                    
-                log("SH flow target: %.1f" % flowT_target)
-                ecodan.set_temp(flowT_target)
+                    log("SH flow target: %.1f" % flowT_target)
+                    ecodan.set_temp(flowT_target)
                     
         time.sleep(1.2)
     time.sleep(0.1)
 
 # Close
 sys.exit()
-
