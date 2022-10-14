@@ -10,13 +10,14 @@ from os.path import exists
 
 from cn105 import CN105
 
-logging.basicConfig(filename='/var/log/emoncms/hpctrl.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
-
-ecodan = CN105("/dev/ecodan", 2400)
-ecodan.connect()
-
+control_enabled = True
+room_temp_inputid = 30
 apikey = ""
 
+logging.basicConfig(filename='/var/log/emoncms/hpctrl.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
+
+ecodan = CN105("/dev/ecodan", 2400, control_enabled)
+ecodan.connect()
 
 def log(message):
     #print(message)
@@ -108,7 +109,7 @@ while 1:
                     f.write(json.dumps(config_tmp))
                     f.close()
 
-        x = r.hget('input:lastvalue:30','value')
+        x = r.hget('input:lastvalue:'+str(room_temp_inputid),'value')
         if x: hp['roomT'] = float(x.decode())*10.0
         else: hp['roomT'] = 20.0                     # default heating on if no room temp sensor
         

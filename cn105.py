@@ -6,8 +6,9 @@ class CN105:
     last_temp = -1
     last_power = -1
 
-    def __init__(self,port,baud):
+    def __init__(self,port,baud,control_enabled=True):
         self.ser = serial.Serial("/dev/ecodan", 2400, 8, 'E', 1, 0.5)
+        self.control_enabled = control_enabled
             
     def calc_checksum(self,frame):
         frame_sum = 0
@@ -177,6 +178,8 @@ class CN105:
         data = self.read_reply()
 
     def set_power(self,power):
+        if not self.control_enabled: return False
+        
         if power!=self.last_power:
             self.last_power = power
             print("Sending power cmd "+str(power))
@@ -187,6 +190,8 @@ class CN105:
             return self.parse_frame(data)
 
     def set_temp(self,temp):
+        if not self.control_enabled: return False
+        
         # reduce to 1 dp resolution
         temp = int(temp*10)*0.1
         # only update if state has changed
