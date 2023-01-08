@@ -5,30 +5,46 @@ import redis
 import datetime
 import math
 import logging
+import requests
+from os.path import exists
+
 from cn105 import CN105
 
-logging.basicConfig(filename='/home/pi/hpctrl.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
+control_enabled = True
+room_temp_inputid = 30
+apikey = ""
 
-ecodan = CN105("/dev/ecodan", 2400)
+logging.basicConfig(filename='/var/log/emoncms/hpctrl.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
+
+ecodan = CN105("/dev/ecodan", 2400, control_enabled)
 ecodan.connect()
 
-# -----------------------------------------------------
-# Test configuration
-# -----------------------------------------------------
+def log(message):
+    #print(message)
+    logging.debug(message)
+    
+log("--- hpctrl starting ---")
+
+# Default configuration = heat pump off
 config = {
     "heating": [
         {"start":"0000","set_point":5.0,"flowT":20.0,"mode":"min"}
     ]
 }
 
-def log(message):
-    #print(message)
-    logging.debug(message)
+# Load configuration from local schedule.json file if available
+if exists("/home/pi/schedule.json"):
+    f = open("/home/pi/schedule.json", "r")
+    config_tmp = json.load(f)
+    if 'heating' in config_tmp:
+        config = config_tmp
+        log("config loaded from file")
+        print(config)
+    f.close()
     
 # -----------------------------------------------------
 # Init
 # -----------------------------------------------------    
-log("--- hpctrl starting ---")
 
 r = redis.Redis()
 
@@ -77,10 +93,23 @@ while 1:
         #     log("config updated")
         #     r.delete('hpctrl:config')
         
-        f = open('/opt/emoncms/modules/hpctrl/schedule.json')
-        config = json.load(f)
+        if math.floor(time.time()%60)==0:
+            try:
+                reply = requests.get("https://emoncms.org/hpctrl/get-config?apikey="+apikey, timeout=60)
+                reply.raise_for_status()
+            except requests.exceptions.RequestException as ex:
+                log(ex)
+            log(reply.text)
+            config_tmp = json.loads(reply.text)
+            if 'heating' in config_tmp:
+                if json.dumps(config)!=json.dumps(config_tmp):
+                    config = config_tmp           
+                    log("Config updated")
+                    f = open("/home/pi/schedule.json", "w")
+                    f.write(json.dumps(config_tmp))
+                    f.close()
 
-        x = r.hget('input:lastvalue:30','value')
+        x = r.hget('input:lastvalue:'+str(room_temp_inputid),'value')
         if x: hp['roomT'] = float(x.decode())*10.0
         else: hp['roomT'] = 20.0                     # default heating on if no room temp sensor
         
