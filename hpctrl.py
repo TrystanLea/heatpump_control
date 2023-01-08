@@ -25,7 +25,7 @@ config = {
 # Read in input values
 # -----------------------------------------------------
 # roomT default to 0 ensures heating stays on if room sensor fails
-hp = {'roomT':0,'flowT':False,'returnT':False,'cyl_top':False,'cyl_bot':False,'flowrate':False,'ambient':False,'extpipe':0}
+hp = {'roomT':0,'flowT':False,'returnT':False,'cyl_top':0,'cyl_bot':0,'flowrate':False,'ambient':False,'extpipe':0}
 
 def log(message):
     # print(message)
@@ -156,7 +156,7 @@ while 1:
                     # ----------------------------------------------------------------
                     # Thermostat
                     # ----------------------------------------------------------------
-                    if float(hp['roomT'])>=(float(heating['set_point'])+0.195) and state!=0:
+                    if float(hp['roomT'])>=(float(heating['set_point'])+0.1) and state!=0:
                         # turn heat off for 60 seconds then turn heat pump off completely
                         state = 0
                         r.set("hpctrl:temp",20.0)
@@ -173,7 +173,7 @@ while 1:
                         frost_protection_state = 0
                         frost_protection_timer = time.time()
 
-                    if hp['roomT']<=(heating['set_point']-0.195) and state!=1:
+                    if hp['roomT']<=(heating['set_point']-0.1) and state!=1:
                         log("Turning heating on");
                         state = 1
                         r.set("hpctrl:r1",1)
@@ -259,7 +259,7 @@ while 1:
                 if hp['cyl_top']<run['T'] or hp['cyl_bot']<(run['T']-3.0):
                 
                     if run['mode']=="min":
-                        flowT_target = hp['cyl_bot'] + 10.0
+                        flowT_target = hp['cyl_bot'] + 7.0
                         log("DHW flow target: %.1f" % flowT_target)
                         r.set("hpctrl:r1",1)
                         r.set("hpctrl:ac1",1)
