@@ -202,6 +202,7 @@ class CN105:
             z1sp_b = int(temp*100) - (z1sp_a<<8)
             
             print("Sending temp cmd "+str(temp))
+            #                 Update settings: FLAG, Z  ,P   , ?  ,DHW, HC1, HC2, DHWSP, DHWSP, Z1, Z1  , Z2,  Z2
             msg = [0xfc,0x41,0x02,0x7a,16,0x32,0x80,0x00,0x00,0x02,0x00,0x00,0x00,0x00,0x00,z1sp_a,z1sp_b,0x00,0x00,0x00,0x00,0x00]
             msg = self.calc_checksum(msg)
             self.ser.write(msg)
